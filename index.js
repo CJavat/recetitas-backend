@@ -1,11 +1,33 @@
+//* Configure .env file
+require("dotenv").config();
+
+//* Import dependencies
 const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const path = require("path");
+
+//* Import data base
+const db = require("./database/db");
+
+//* Import routes
+const authRoute = require("./routes/auth.routes");
+
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Hola Mundo2");
-});
+//* Enable static folders
+app.use(express.static(path.join(__dirname, "/public/img")));
 
-const port = 8000 || process.env.PORT;
+//* Enable body-parser
+app.use(bodyParser.json());
+
+//* Enable CORS
+app.use(cors());
+
+//* Enble routes.
+app.use("/auth", authRoute);
+
+const port = process.env.LOCALPORT || process.env.PORT;
 app.listen(port, () => {
   console.log("listening on port " + port);
 });
