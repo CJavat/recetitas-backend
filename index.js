@@ -12,6 +12,7 @@ const db = require("./database/db");
 
 //* Import routes
 const authRoute = require("./routes/auth.routes");
+const recipesRoute = require("./routes/recipes.routes");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(cors());
 
 //* Enble routes.
 app.use("/auth", authRoute);
+app.use("/recipes", recipesRoute);
 
 const port = process.env.LOCALPORT || process.env.PORT;
 app.listen(port, () => {
