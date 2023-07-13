@@ -3,7 +3,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const shortId = require("shortid");
 
-const { changePasswordEmail } = require("../helpers/mailtrap");
+const {
+  changePasswordEmail,
+  confirmYourAccount,
+} = require("../helpers/mailtrap");
 
 const signIn = async (req, res) => {
   const { email, password } = req.body;
@@ -19,6 +22,12 @@ const signIn = async (req, res) => {
     //* Check if password is correct
     if (!(await bcrypt.compare(password, userSaved.password))) {
       return res.status(400).json({ msg: "Password Incorrecto" });
+    }
+
+    if (userSaved.accountActivated === 0) {
+      return res
+        .status(403)
+        .json({ msg: "Activa Tu Cuenta Para Iniciar Sesión" });
     }
 
     const token = jwt.sign(
@@ -58,11 +67,19 @@ const signUp = async (req, res) => {
     //* Save user
     const userSaved = await UserModel.create(req.body);
 
-    return res.status(200).json({ msg: "Registro Exitoso" });
+    //* ENVIAR EMAIL DE CONFIRMACIÓN DE CUENTA Y ACTUALIZAR EL TOKEN
+    const token = shortId.generate();
+    confirmYourAccount({ email: userSaved.email, token });
+    userSaved.token = token;
+    userSaved.save();
+
+    return res
+      .status(200)
+      .json({ msg: "Registro Exitoso - Confirma Tu Cuenta" });
   } catch (error) {
     const arrayErrors = [];
 
-    //! MOSTRAR ERRORES.
+    //! SHOW ERRORES.
     if (error.errors) {
       error.errors.firstName?.properties.type === "minlength" &&
         arrayErrors.push("El NOMBRE es muy corto");
@@ -75,8 +92,6 @@ const signUp = async (req, res) => {
         arrayErrors.push("El NOMBRE es muy corto");
       error.errors.lastName?.properties.type === "maxlength" &&
         arrayErrors.push("El APELLIDO es muy corto");
-      error.errors.password?.properties.type === "maxlength" &&
-        arrayErrors.push("El PASSWORD es muy largo");
 
       error.errors.firstName?.properties.type === "required" &&
         arrayErrors.push("El NOMBRE es obligatorio");
@@ -96,10 +111,61 @@ const signUp = async (req, res) => {
 };
 
 const deleteMyAccount = async (req, res) => {
-  //TODO: TERMINAR
+  try {
+    const { email } = req.body;
+
+    const userFound = await UserModel.findOne({ email });
+
+    if (!userFound) {
+      return res.status(404).json({ msg: "El usuario no existe" });
+    }
+
+    userFound.deleteOne();
+
+    return res.status(200).json({ msg: "Usuario eliminado correctamente" });
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha Ocurrido un error: ${error.message}` });
+  }
 };
 
 const editMyAccount = async (req, res) => {
+  try {
+    const { id, firstName, lastName, password } = req.body;
+
+    const userExists = await UserModel.findById(id);
+
+    if (!userExists) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    if (firstName) {
+      userExists.firstName = firstName;
+    }
+
+    if (lastName) {
+      userExists.lastName = lastName;
+    }
+
+    if (password) {
+      userExists.password = password;
+    }
+
+    userExists.save();
+
+    return res
+      .status(200)
+      .json({ msg: "Tus datos se han actualizado correctamente" });
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha Ocurrido un error: ${error.message}` });
+  }
   //TODO: TERMINAR
 };
 
@@ -162,6 +228,33 @@ const changePassword = async (req, res) => {
   }
 };
 
+const confirmAccount = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const tokenExists = await UserModel.findOne({ token });
+    if (!tokenExists) {
+      return res.status(404).json({ msg: "Token inválido" });
+    }
+
+    //* Delete token n' Activate Account
+    tokenExists.token = "";
+    tokenExists.accountActivated = 1;
+
+    //* Save query
+    tokenExists.save();
+
+    return res.status(200).json({ msg: "Cuenta activada correctamente" });
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha Ocurrido un error: ${error.message}` });
+  }
+  //TODO: TERMINAR
+};
+
 const decodeTheToken = (req, res) => {
   const { token } = req.body;
 
@@ -180,5 +273,6 @@ module.exports = {
   editMyAccount,
   forgotPassword,
   changePassword,
+  confirmAccount,
   decodeTheToken,
 };

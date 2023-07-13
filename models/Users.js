@@ -30,7 +30,7 @@ const userSchema = new Schema({
     trim: true,
     required: true,
     minLength: 7,
-    maxLength: 15,
+    // maxLength: 15,
   },
   favorites: [
     {
@@ -40,6 +40,7 @@ const userSchema = new Schema({
   ],
   token: {
     type: String,
+    defautl: "",
   },
   accountActivated: {
     type: Number,

@@ -9,6 +9,7 @@ const {
   editMyAccount,
   forgotPassword,
   changePassword,
+  confirmAccount,
   decodeTheToken,
 } = require("../controllers/auth.controllers");
 
@@ -23,6 +24,8 @@ router.put("/edit-account", editMyAccount);
 router.post("/forgot-password", forgotPassword);
 
 router.post("/change-password/:token", changePassword);
+
+router.post("/confirm-account/:token", confirmAccount);
 
 router.post("/decode-token", decodeTheToken);
 
