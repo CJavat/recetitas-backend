@@ -71,7 +71,7 @@ const signUp = async (req, res) => {
     const token = shortId.generate();
     confirmYourAccount({ email: userSaved.email, token });
     userSaved.token = token;
-    userSaved.save();
+    await userSaved.save();
 
     return res
       .status(200)
@@ -154,7 +154,7 @@ const editMyAccount = async (req, res) => {
       userExists.password = password;
     }
 
-    userExists.save();
+    await userExists.save();
 
     return res
       .status(200)
@@ -242,7 +242,7 @@ const confirmAccount = async (req, res) => {
     tokenExists.accountActivated = 1;
 
     //* Save query
-    tokenExists.save();
+    await tokenExists.save();
 
     return res.status(200).json({ msg: "Cuenta activada correctamente" });
   } catch (error) {
@@ -265,6 +265,8 @@ const decodeTheToken = (req, res) => {
     return res.status(400).json({ msg: `Ocurrió un error: ${error.message}` });
   }
 };
+
+//TODO: FALTA HACER UN CONTROLADOR PARA AGREGAR O ELIMINAR DE FAVORITOS.
 
 module.exports = {
   signIn,

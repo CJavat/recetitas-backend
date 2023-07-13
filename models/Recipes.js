@@ -15,9 +15,13 @@ const recipesSchema = new Schema({
       required: true,
       trim: true,
       minLength: 2,
-      maxLength: 20,
     },
   ],
+  procedure: {
+    type: String,
+    tolowercase: true,
+    trim: true,
+  },
   link: {
     type: String,
     trim: true,
@@ -25,6 +29,10 @@ const recipesSchema = new Schema({
   picture: {
     type: String,
     trim: true,
+  },
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
   },
 });
 
