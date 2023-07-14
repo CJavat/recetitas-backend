@@ -110,11 +110,68 @@ const addRecipe = async (req, res, next) => {
 };
 
 const editRecipe = async (req, res, next) => {
+  const { _id, name, ingrendients, link, picture, userId } = req.body;
+
+  try {
+    const recipeFound = await RecipesModel.findOne({ _id, userId });
+
+    if (!recipeFound || recipeFound.length === 0) {
+      return res.status(404).json({ msg: "No se encontró la receta" });
+    }
+
+    if (req.file?.filename !== recipeFound.picture) {
+      recipeFound.picture = req.file.filename;
+      //TODO: VA A FALTAR ELIMINAR LA FOTO SI LA CAMBIO.
+    }
+
+    if (recipeFound.name !== name) {
+      recipeFound.name = name;
+    }
+
+    // if() {
+    //TODO: TERMINAR LA PARTE DE LOS INGREDIENTES
+    // }
+
+    if (recipeFound.link !== link) {
+      recipeFound.link = link;
+    }
+
+    await recipeFound.save();
+
+    return res.status(200).json({ msg: "Receta Creada Correctamente" });
+  } catch (error) {
+    const arrayErrors = [];
+
+    if (error.errors) {
+      error.errors.name?.properties.type === "required" &&
+        arrayErrors.push("El NOMBRE es obligatorio");
+      error.message ===
+        "Recipes validation failed: ingredients.0: Path `ingredients.0` is required." &&
+        arrayErrors.push("Los INGREDIENTES son obligatorios");
+    }
+
+    console.log(error.message);
+    return res.status(400).json({ msg: arrayErrors || error.message });
+  }
+
   //TODO: TERMINAR CONTROLADOR
 };
 
 const deleteRecipe = async (req, res, next) => {
-  //TODO: TERMINAR CONTROLADOR
+  const { id, name } = req.body;
+
+  try {
+    const recipe = await RecipesModel.findOneAndRemove({ userId: id, name });
+    if (!recipe || recipe.length === 0) {
+      return res.status(404).json({ msg: "La receta no existe" });
+    }
+
+    return res.status(200).json({ msg: "Receta elminada correctamente" });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ msg: `Ocurrió un error en la base de datos: ${error.message}` });
+  }
 };
 
 module.exports = {
