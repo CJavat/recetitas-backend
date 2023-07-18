@@ -166,7 +166,6 @@ const editMyAccount = async (req, res) => {
       .status(400)
       .json({ msg: `Ha Ocurrido un error: ${error.message}` });
   }
-  //TODO: TERMINAR
 };
 
 const forgotPassword = async (req, res) => {
@@ -252,7 +251,6 @@ const confirmAccount = async (req, res) => {
       .status(400)
       .json({ msg: `Ha Ocurrido un error: ${error.message}` });
   }
-  //TODO: TERMINAR
 };
 
 const decodeTheToken = (req, res) => {

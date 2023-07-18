@@ -55,7 +55,6 @@ const getRecipes = async (req, res, next) => {
       .status(400)
       .json({ msg: `Ha ocurrido un error en la consulta: ${error.message}` });
   }
-  //TODO: TERMINAR CONTROLADOR
 };
 
 const getRecipe = async (req, res, next) => {
@@ -76,7 +75,6 @@ const getRecipe = async (req, res, next) => {
       .status(400)
       .json({ msg: `Ha ocurrido un error en la consulta: ${error.message}` });
   }
-  //TODO: TERMINAR CONTROLADOR
 };
 
 const addRecipe = async (req, res, next) => {
@@ -161,6 +159,7 @@ const deleteRecipe = async (req, res, next) => {
   const { id, name } = req.body;
 
   try {
+    //TODO: ELIMINAR FOTO QUE SUBIO EL USUARIO:
     const recipe = await RecipesModel.findOneAndRemove({ userId: id, name });
     if (!recipe || recipe.length === 0) {
       return res.status(404).json({ msg: "La receta no existe" });
