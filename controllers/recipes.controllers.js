@@ -1,7 +1,9 @@
 const RecipesModel = require("../models/Recipes");
+const UserModel = require("../models/Users");
 const shortId = require("shortid");
 const multer = require("multer");
 const path = require("path");
+const { unlink } = require("node:fs/promises");
 
 //* MULTER - UPLOAD PHOTOS ------------------------------------------
 const configuracionMulterArchivos = {
@@ -47,7 +49,7 @@ const getRecipes = async (req, res, next) => {
       return res.status(404).json({ msg: "No se han ecnontrado recetas" });
     }
 
-    return res.status(200).json({ getAllRecipes });
+    return res.status(200).json(getAllRecipes);
   } catch (error) {
     console.log(error);
 
@@ -67,7 +69,7 @@ const getRecipe = async (req, res, next) => {
       return res.status(404).json({ msg: "No se encontró la receta" });
     }
 
-    return res.status(200).json({ getRecipe });
+    return res.status(200).json(getRecipe);
   } catch (error) {
     console.log(error);
 
@@ -78,7 +80,16 @@ const getRecipe = async (req, res, next) => {
 };
 
 const addRecipe = async (req, res, next) => {
+  const { userId } = req.body;
+
   try {
+    const userFound = await UserModel.findById(userId);
+    if (!userFound || userFound.length === 0) {
+      return res
+        .status(404)
+        .json({ msg: "El usuario que registra la receta no existe" });
+    }
+
     const recipeCreated = await RecipesModel.create(req.body);
 
     if (!recipeCreated) {
@@ -156,14 +167,22 @@ const editRecipe = async (req, res, next) => {
 };
 
 const deleteRecipe = async (req, res, next) => {
-  const { id, name } = req.body;
+  const { id } = req.params;
+  //TODO: AUTENTICAR QUE QUIEN ELIMINA LA RECETA ES EL PROPIETARIO DE ESA PUBLICACIÓN (ENVIAR ID MEDIANTE BODY O HEADERS)
 
   try {
-    //TODO: ELIMINAR FOTO QUE SUBIO EL USUARIO:
-    const recipe = await RecipesModel.findOneAndRemove({ userId: id, name });
+    const recipe = await RecipesModel.findById(id);
+
     if (!recipe || recipe.length === 0) {
       return res.status(404).json({ msg: "La receta no existe" });
     }
+
+    if (recipe.picture) {
+      const url = path.join(__dirname, `/../public/img/${recipe.picture}`);
+      await unlink(url);
+    }
+
+    await recipe.deleteOne();
 
     return res.status(200).json({ msg: "Receta elminada correctamente" });
   } catch (error) {

@@ -1,7 +1,10 @@
 const UserModel = require("../models/Users");
+const RecipesModel = require("../models/Recipes");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const shortId = require("shortid");
+const path = require("path");
+const { unlink } = require("node:fs/promises");
 
 const {
   changePasswordEmail,
@@ -116,11 +119,27 @@ const deleteMyAccount = async (req, res) => {
 
     const userFound = await UserModel.findOne({ email });
 
-    if (!userFound) {
+    if (!userFound || userFound.length === 0) {
       return res.status(404).json({ msg: "El usuario no existe" });
     }
 
-    userFound.deleteOne();
+    const recipes = await RecipesModel.find({ userId: userFound._id });
+    const imagesRecipes = [];
+
+    for (const recipe of recipes) {
+      if (recipe.picture) {
+        imagesRecipes.push(recipe.picture);
+      }
+    }
+
+    if (imagesRecipes.length > 0) {
+      imagesRecipes.map(async (imageState) => {
+        const url = path.join(__dirname, `/../public/img/${imageState}`);
+        await unlink(url);
+      });
+    }
+    await RecipesModel.deleteMany({ userId: userFound._id });
+    await userFound.deleteOne();
 
     return res.status(200).json({ msg: "Usuario eliminado correctamente" });
   } catch (error) {
