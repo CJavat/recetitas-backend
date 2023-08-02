@@ -272,6 +272,104 @@ const confirmAccount = async (req, res) => {
   }
 };
 
+const addFavorites = async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const { idRecipe } = req.params;
+
+  try {
+    const recipeFound = await RecipesModel.find({ _id: idRecipe });
+    if (!recipeFound || recipeFound.length === 0) {
+      return res.status(404).json({ msg: "La receta no existe" });
+    }
+
+    const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
+
+    const userFound = await UserModel.findById(tokenDecoded.id);
+
+    if (!userFound || userFound.length === 0) {
+      return res.status(404).json({ msg: "El usuario no existe" });
+    }
+
+    if (userFound._id.toString() !== recipeFound[0].userId.toString()) {
+      return res
+        .status(403)
+        .json({ msg: "No tienes permisos para agregar la receta" });
+    }
+
+    let isFavoirteValid = true;
+    userFound.favorites.forEach((favoriteState) => {
+      favoriteState.toString() === idRecipe && (isFavoirteValid = false);
+    });
+
+    if (isFavoirteValid === false) {
+      return res
+        .status(400)
+        .json({ msg: "Esa receta ya está guardada en favoritos" });
+    }
+
+    userFound.favorites = [...userFound.favorites, idRecipe];
+    await userFound.save();
+
+    return res.status(200).json(userFound);
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha ocurrido un error en la consulta: ${error.message}` });
+  }
+};
+
+const deleteFavorites = async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const { idRecipe } = req.params;
+
+  try {
+    const recipeFound = await RecipesModel.find({ _id: idRecipe });
+    if (!recipeFound || recipeFound.length === 0) {
+      return res.status(404).json({ msg: "La receta no existe" });
+    }
+
+    const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
+
+    const userFound = await UserModel.findById(tokenDecoded.id);
+
+    if (!userFound || userFound.length === 0) {
+      return res.status(404).json({ msg: "El usuario no existe" });
+    }
+
+    if (userFound._id.toString() !== recipeFound[0].userId.toString()) {
+      return res
+        .status(403)
+        .json({ msg: "No tienes permisos para elmiinar la receta" });
+    }
+
+    let isFavoirteValid = userFound.favorites.find(
+      (favoriteState) => favoriteState.toString() === idRecipe
+    );
+
+    if (isFavoirteValid === undefined) {
+      return res
+        .status(400)
+        .json({ msg: "Esa receta ya está eliminada de favoritos" });
+    }
+
+    userFound.favorites = userFound.favorites.filter(
+      (favoriteState) => favoriteState.toString() !== idRecipe
+    );
+
+    await userFound.save();
+
+    return res.status(200).json(userFound);
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha ocurrido un error en la consulta: ${error.message}` });
+  }
+};
+
 const decodeTheToken = (req, res) => {
   const { token } = req.body;
 
@@ -283,8 +381,6 @@ const decodeTheToken = (req, res) => {
   }
 };
 
-//TODO: FALTA HACER UN CONTROLADOR PARA AGREGAR O ELIMINAR DE FAVORITOS.
-
 module.exports = {
   signIn,
   signUp,
@@ -293,5 +389,7 @@ module.exports = {
   forgotPassword,
   changePassword,
   confirmAccount,
+  addFavorites,
+  deleteFavorites,
   decodeTheToken,
 };

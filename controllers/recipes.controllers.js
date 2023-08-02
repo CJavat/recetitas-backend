@@ -1,5 +1,6 @@
 const RecipesModel = require("../models/Recipes");
 const UserModel = require("../models/Users");
+const jwt = require("jsonwebtoken");
 const shortId = require("shortid");
 const multer = require("multer");
 const path = require("path");
@@ -128,9 +129,17 @@ const editRecipe = async (req, res, next) => {
       return res.status(404).json({ msg: "No se encontró la receta" });
     }
 
-    if (req.file?.filename !== recipeFound.picture) {
-      recipeFound.picture = req.file.filename;
-      //TODO: VA A FALTAR ELIMINAR LA FOTO SI LA CAMBIO.
+    if (req.file?.filename !== undefined) {
+      if (req.file?.filename !== recipeFound.picture) {
+        const url = path.join(
+          __dirname,
+          `/../public/img/${recipeFound.picture}`
+        );
+
+        await unlink(url);
+
+        recipeFound.picture = req.file.filename;
+      }
     }
 
     if (recipeFound.name !== name) {
@@ -138,7 +147,7 @@ const editRecipe = async (req, res, next) => {
     }
 
     // if() {
-    //TODO: TERMINAR LA PARTE DE LOS INGREDIENTES
+    //TODO: TERMINAR LA PARTE DE LOS INGREDIENTES (Esto se hara ya que haga la parte de FRONT)
     // }
 
     if (recipeFound.link !== link) {
@@ -147,7 +156,7 @@ const editRecipe = async (req, res, next) => {
 
     await recipeFound.save();
 
-    return res.status(200).json({ msg: "Receta Creada Correctamente" });
+    return res.status(200).json({ msg: "Receta Editada Correctamente" });
   } catch (error) {
     const arrayErrors = [];
 
@@ -167,14 +176,21 @@ const editRecipe = async (req, res, next) => {
 };
 
 const deleteRecipe = async (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
   const { id } = req.params;
-  //TODO: AUTENTICAR QUE QUIEN ELIMINA LA RECETA ES EL PROPIETARIO DE ESA PUBLICACIÓN (ENVIAR ID MEDIANTE BODY O HEADERS)
 
   try {
     const recipe = await RecipesModel.findById(id);
+    const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
 
     if (!recipe || recipe.length === 0) {
       return res.status(404).json({ msg: "La receta no existe" });
+    }
+
+    if (recipe.userId.toString() !== tokenDecoded.id) {
+      return res
+        .status(403)
+        .json({ msg: "Éste usuario no tiene permiso para eliminar la receta" });
     }
 
     if (recipe.picture) {
@@ -192,6 +208,31 @@ const deleteRecipe = async (req, res, next) => {
   }
 };
 
+const getFavorites = async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  try {
+    const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
+    const userFound = await UserModel.findById(tokenDecoded.id);
+    if (!userFound || userFound.length === 0) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    if (userFound.favorites.length === 0) {
+      return res
+        .status(404)
+        .json({ msg: "No tienes recetas guardadas en favoritos" });
+    }
+
+    return res.status(200).json(userFound.favorites);
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(400)
+      .json({ msg: `Ha ocurrido un error en la consulta: ${error.message}` });
+  }
+};
+
 module.exports = {
   uploadPicture,
   getRecipes,
@@ -199,4 +240,5 @@ module.exports = {
   addRecipe,
   editRecipe,
   deleteRecipe,
+  getFavorites,
 };
