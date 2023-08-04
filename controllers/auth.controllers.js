@@ -76,9 +76,9 @@ const signUp = async (req, res) => {
     userSaved.token = token;
     await userSaved.save();
 
-    return res
-      .status(200)
-      .json({ msg: "Registro Exitoso - Confirma Tu Cuenta" });
+    return res.status(200).json({
+      msg: "Registro Exitoso. Te enviamos un email para que confirmes tu cuenta",
+    });
   } catch (error) {
     const arrayErrors = [];
 
@@ -192,6 +192,10 @@ const forgotPassword = async (req, res) => {
     const userFound = await UserModel.findOne({ email: req.body.email });
     if (!userFound) {
       return res.status(404).json({ msg: "El correo no existe" });
+    }
+
+    if (userFound.accountActivated === 0) {
+      return res.status(400).json({ msg: "Tu cuenta aún no está activada" });
     }
 
     const token = shortId.generate();
