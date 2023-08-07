@@ -134,9 +134,9 @@ const myProfile = async (req, res) => {
 
 const deleteMyAccount = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { id } = req.params;
 
-    const userFound = await UserModel.findOne({ email });
+    const userFound = await UserModel.findById(id);
 
     if (!userFound || userFound.length === 0) {
       return res.status(404).json({ msg: "El usuario no existe" });
@@ -271,11 +271,78 @@ const changePassword = async (req, res) => {
   }
 };
 
+const newPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    const userFound = await UserModel.findById(id);
+    if (!userFound || !userFound.length === 0) {
+      return res.status(404).json({
+        msg: "USUARIO NO ENCONTRADO",
+      });
+    }
+
+    if (password.length <= 6) {
+      return res
+        .status(400)
+        .json({ msg: "LA CONTRASEÑA DEBE TENER UN MINIMO DE 7 CARACTERES" });
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+
+    await UserModel.findOneAndUpdate(
+      { _id: id },
+      { password: hash },
+      { new: true }
+    );
+
+    return res
+      .status(200)
+      .json({ msg: "La contraseña actualizada correctamente2" });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(400).json({ msg: "Ha ocurrido un error" + error });
+  }
+};
+
 const changeEmail = async (req, res) => {
-  //TODO: TEMRINAR ESTE CONTROLLADOR
-  /*
-    SE DEBE CAMBIAR EL EMAIL Y AGREGARLE UN TOKEN DE NUEVO, DESACTIVARLE LA CUENTA HASTA QUE VUELVA A CONFIRMAR SU EMAIL.
-  */
+  try {
+    const { email } = req.body;
+    const token = req.headers.authorization.split(" ")[1];
+
+    const emailExist = await UserModel.findOne({ email });
+    if (emailExist) {
+      return res.status(400).json({ msg: "EL EMAIL YA ESTÁ REGISTRADO" });
+    }
+
+    const tokenDecoded = jwt.verify(token, process.env.SECRET_KEY);
+
+    const userFound = await UserModel.findById(tokenDecoded.id).select(
+      "email accountActivated token"
+    );
+    if (!userFound || userFound.length === 0) {
+      return res.status(404).json({ msg: "USUARIO NO ENCONTRADO" });
+    }
+
+    const newToken = shortId.generate();
+    confirmYourAccount({ email, token: newToken });
+
+    userFound.token = newToken;
+    userFound.accountActivated = 0;
+    userFound.email = email;
+
+    await userFound.save();
+
+    return res.status(200).json({
+      msg: "SE CAMBIÓ TU EMAIL CORRECTAMENTE, DE NUEVO TIENES QUE ACTIVAR TU CUENTA, REVISA TU EMAIL",
+    });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ msg: `Ocurrió un error desconocido: ${error.message}` });
+  }
 };
 
 const confirmAccount = async (req, res) => {
@@ -421,6 +488,7 @@ module.exports = {
   editMyAccount,
   forgotPassword,
   changePassword,
+  newPassword,
   changeEmail,
   confirmAccount,
   addFavorites,

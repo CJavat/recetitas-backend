@@ -10,6 +10,7 @@ const {
   editMyAccount,
   forgotPassword,
   changePassword,
+  newPassword,
   changeEmail,
   confirmAccount,
   addFavorites,
@@ -20,11 +21,12 @@ const {
 router.post("/sign-in", signIn);
 router.post("/sign-up", signUp);
 router.get("/my-profile/:id", myProfile);
-router.delete("/delete-account", deleteMyAccount);
+router.delete("/delete-account/:id", deleteMyAccount);
 router.put("/edit-account", editMyAccount);
 router.post("/forgot-password", forgotPassword);
 router.post("/change-password/:token", changePassword);
-// router.post("/change-email", changeEmail); //TODO: TERMIANR
+router.post("/new-password/:id", newPassword);
+router.post("/change-email", changeEmail);
 router.post("/confirm-account/:token", confirmAccount);
 router.post("/add-favorite/:idRecipe", addFavorites);
 router.put("/delete-favorite/:idRecipe", deleteFavorites);
