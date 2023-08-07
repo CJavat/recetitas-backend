@@ -61,11 +61,13 @@ const getRecipes = async (req, res, next) => {
 };
 
 const getRecipe = async (req, res, next) => {
-  const { idUser } = req.params;
-  const { name } = req.body;
+  const { idUser, idRecipe } = req.params;
 
   try {
-    const getRecipe = await RecipesModel.findOne({ name, userId: idUser });
+    const getRecipe = await RecipesModel.findOne({
+      _id: idRecipe,
+      userId: idUser,
+    }).select("-__v");
     if (!getRecipe || getRecipe.length === 0) {
       return res.status(404).json({ msg: "No se encontró la receta" });
     }

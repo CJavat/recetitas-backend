@@ -113,6 +113,25 @@ const signUp = async (req, res) => {
   }
 };
 
+const myProfile = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userFound = await UserModel.findById(id).select(
+      "-__v -password -accountActivated -token -_id"
+    );
+    if (!userFound || userFound.length === 0) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
+    }
+
+    return res.status(200).json(userFound);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(400)
+      .json({ msg: `Ha ocurrido un error: ${error.message}` });
+  }
+};
+
 const deleteMyAccount = async (req, res) => {
   try {
     const { email } = req.body;
@@ -229,7 +248,9 @@ const changePassword = async (req, res) => {
 
     const tokenExists = await UserModel.findOne({ token });
     if (!tokenExists) {
-      return res.status(404).json({ msg: "No se ha encontrado el usuario" });
+      return res.status(404).json({
+        msg: "No se ha encontrado el usuario o el token ya no es válido",
+      });
     }
 
     const hash = await bcrypt.hash(password, 12);
@@ -248,6 +269,13 @@ const changePassword = async (req, res) => {
 
     return res.status(400).json({ msg: "Ha ocurrido un error" + error });
   }
+};
+
+const changeEmail = async (req, res) => {
+  //TODO: TEMRINAR ESTE CONTROLLADOR
+  /*
+    SE DEBE CAMBIAR EL EMAIL Y AGREGARLE UN TOKEN DE NUEVO, DESACTIVARLE LA CUENTA HASTA QUE VUELVA A CONFIRMAR SU EMAIL.
+  */
 };
 
 const confirmAccount = async (req, res) => {
@@ -325,10 +353,10 @@ const addFavorites = async (req, res) => {
 };
 
 const deleteFavorites = async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const { idRecipe } = req.params;
-
   try {
+    const token = req.headers.authorization.split(" ")[1];
+    const { idRecipe } = req.params;
+
     const recipeFound = await RecipesModel.find({ _id: idRecipe });
     if (!recipeFound || recipeFound.length === 0) {
       return res.status(404).json({ msg: "La receta no existe" });
@@ -388,10 +416,12 @@ const decodeTheToken = (req, res) => {
 module.exports = {
   signIn,
   signUp,
+  myProfile,
   deleteMyAccount,
   editMyAccount,
   forgotPassword,
   changePassword,
+  changeEmail,
   confirmAccount,
   addFavorites,
   deleteFavorites,
